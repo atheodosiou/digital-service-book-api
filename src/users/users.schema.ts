@@ -7,29 +7,23 @@ export type UserDocument = User & Document;
 
 @Schema({ timestamps: true })
 export class User {
-    @Prop({ required: true, unique: true })
-    email: string;
+  @Prop({ required: true, unique: true })
+  email: string;
 
-    @Prop()
-    password?: string;
+  @Prop()
+  password?: string;
 
-    @Prop()
-    name?: string;
+  @Prop()
+  name?: string;
 
-    @Prop()
-    picture: string;
+  @Prop()
+  picture: string;
 
-    @Prop({ unique: true })
-    googleId?: string;
+  @Prop({ unique: true })
+  googleId?: string;
 
-    @Prop({ default: 'local', enum: ['local', 'google'] })
-    provider: 'local' | 'google';
-
-    @Prop({ default: 'owner', enum: ['owner', 'admin'] })
-    role: 'owner' | 'admin';
-
-    @Prop({ default: true })
-    isActive: boolean;
+  @Prop({ default: true })
+  isActive: boolean;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);
