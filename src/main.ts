@@ -6,19 +6,19 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-  app.setGlobalPrefix('api')
+  app.setGlobalPrefix('api');
   app.enableCors();
   app.use(helmet());
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
-      forbidNonWhitelisted: true,
       transform: true,
+      forbidNonWhitelisted: true,
     }),
   );
   const config = new DocumentBuilder()
-    .setTitle('QResto API')
-    .setDescription('API for managing multilingual digital menus')
+    .setTitle('Garage Mate API')
+    .setDescription('API for managing digital vehicle service records')
     .setVersion('1.0')
     .addBearerAuth()
     .build();
