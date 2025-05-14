@@ -1,7 +1,18 @@
-import { IsNotEmpty, IsOptional, IsString, IsNumber } from 'class-validator';
+import {
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  IsNumber,
+  IsEnum,
+} from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
+import { VehicleType } from '../vehicles.schema';
 
 export class CreateVehicleDto {
+  @IsEnum(VehicleType)
+  @ApiProperty({ enum: VehicleType, example: VehicleType.Car })
+  type: VehicleType;
+
   @ApiProperty({ example: 'Toyota' })
   @IsNotEmpty()
   make: string;

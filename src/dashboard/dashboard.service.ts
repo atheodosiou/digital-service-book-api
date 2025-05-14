@@ -22,14 +22,18 @@ export class DashboardService {
   ) {}
 
   async getDashboardData(userId: string) {
-    const objectUserId = new Types.ObjectId(userId);
+    const objectUserId = Types.ObjectId.isValid(userId)
+      ? new Types.ObjectId(userId)
+      : userId;
 
-    const vehicles = await this.vehicleModel
-      .find({ userId: objectUserId })
-      .lean();
+    const userMatch = { $in: [userId, objectUserId] };
 
+    // 🚗 All vehicles owned by user
+    const vehicles = await this.vehicleModel.find({ userId: userMatch }).lean();
+
+    // 🛠 Total service records per vehicle
     const servicesPerVehicle = await this.serviceRecordModel.aggregate([
-      { $match: { userId: objectUserId } },
+      { $match: { userId: userMatch } },
       {
         $group: {
           _id: '$vehicleId',
@@ -38,8 +42,9 @@ export class DashboardService {
       },
     ]);
 
+    // 💰 Total cost of service per vehicle
     const costPerVehicle = await this.serviceRecordModel.aggregate([
-      { $match: { userId: objectUserId } },
+      { $match: { userId: userMatch } },
       {
         $group: {
           _id: '$vehicleId',
@@ -48,8 +53,9 @@ export class DashboardService {
       },
     ]);
 
+    // 🏆 Top service types used
     const topServices = await this.serviceRecordModel.aggregate([
-      { $match: { userId: objectUserId } },
+      { $match: { userId: userMatch } },
       {
         $group: {
           _id: '$serviceTypeId',
@@ -60,13 +66,65 @@ export class DashboardService {
       { $limit: 5 },
     ]);
 
+    // 🕓 Latest service records (limit 5)
     const recentServices = await this.serviceRecordModel
-      .find({ userId: objectUserId })
+      .find({ userId: userMatch })
       .sort({ serviceDate: -1 })
       .limit(5)
       .populate('vehicleId')
       .populate('serviceTypeId')
       .lean();
+
+    // 📊 Count of vehicles per type
+    const vehicleTypeCounts = await this.vehicleModel.aggregate([
+      { $match: { userId: userMatch } },
+      {
+        $group: {
+          _id: '$type',
+          count: { $sum: 1 },
+        },
+      },
+    ]);
+
+    // 🔧 Total services grouped by vehicle type
+    const serviceCountByType = await this.serviceRecordModel.aggregate([
+      { $match: { userId: userMatch } },
+      {
+        $lookup: {
+          from: 'vehicles',
+          localField: 'vehicleId',
+          foreignField: '_id',
+          as: 'vehicle',
+        },
+      },
+      { $unwind: '$vehicle' },
+      {
+        $group: {
+          _id: '$vehicle.type',
+          total: { $sum: 1 },
+        },
+      },
+    ]);
+
+    // 💸 Total cost grouped by vehicle type
+    const serviceCostByType = await this.serviceRecordModel.aggregate([
+      { $match: { userId: userMatch } },
+      {
+        $lookup: {
+          from: 'vehicles',
+          localField: 'vehicleId',
+          foreignField: '_id',
+          as: 'vehicle',
+        },
+      },
+      { $unwind: '$vehicle' },
+      {
+        $group: {
+          _id: '$vehicle.type',
+          totalSpent: { $sum: '$cost' },
+        },
+      },
+    ]);
 
     return {
       vehicles,
@@ -74,6 +132,9 @@ export class DashboardService {
       costPerVehicle,
       topServices,
       recentServices,
+      vehicleTypeCounts,
+      serviceCountByType,
+      serviceCostByType,
     };
   }
 }
